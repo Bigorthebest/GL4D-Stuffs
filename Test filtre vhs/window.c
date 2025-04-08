@@ -1,120 +1,139 @@
-/*!\file window.c
- * \brief GL4Dummies, exemple simple 3D avec GL4Dummies
- * \author Farès BELHADJ, amsi@up8.edu
- * \date February 03 2022
- */
-
-/* inclusion des entêtes de fonctions de création et de gestion de
- * fenêtres système ouvrant un contexte favorable à GL4dummies. Cette
- * partie est dépendante de la bibliothèque SDL2 */
-#include <GL4D/gl4duw_SDL2.h>
-#include <GL4D/gl4dm.h>
+#include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
+#include <GL4D/gl4duw_SDL2.h>
+#include <SDL_image.h>
+#include <assert.h>
 
+/* Prototypes des fonctions statiques contenues dans ce fichier C */
 static void init(void);
+static void resize(int w, int h);
 static void draw(void);
 static void quit(void);
 
-//0 -2 -5
-/* on créé une variable pour stocker l'identifiant du programme GPU */
-GLuint _pId = 0;
-/* on créé une variable pour stocker l'identifiant de la géométrie d'un cube GL4D */
-GLuint _cube = 0;
-// Variable d'angle 
-float angle = 0 ;
+/*!\brief largeur et hauteur de la fenêtre */
+static int _wW = 1280, _wH = 1024;
+/*!\brief identifiant du (futur) GLSL program */
+static GLuint _pId[2] = { 0 };
+/*!\brief identifiant de framebuffer */
+static GLuint _fbo = 0;
+/*!\brief identifiant du plan */
+static GLuint _quad = 0;
+static GLuint _tore = 0;
+/*!\brief identifiant de textures */
+static GLuint _texId[] = { 0, 0 };
 
-GLuint _texId[1] = { 0 };
-
-
-/*!\brief créé la fenêtre, un screen 2D effacé en noir et lance une
- *  boucle infinie.*/
 int main(int argc, char ** argv) {
-  /* tentative de création d'une fenêtre pour GL4Dummies */
-  if(!gl4duwCreateWindow(argc, argv, /* args du programme */
-			 "Je suis une fenetre magique !!!", /* titre */
-			 10, 10, 800, 600, /* x,y, largeur, heuteur */
-			 GL4DW_SHOWN) /* état visible */) {
-    /* ici si échec de la création souvent lié à un problème d'absence
-     * de contexte graphique ou d'impossibilité d'ouverture d'un
-     * contexte OpenGL (au moins 3.2) */
+  if(!gl4duwCreateWindow(argc, argv, "GL4Dummies", 20, 20, 
+			 _wW, _wH, GL4DW_RESIZABLE | GL4DW_SHOWN))
     return 1;
-  }
-  /* appeler init pour initialiser des paramètres GL et GL4D */
   init();
-  /* placer quit comme fonction à appeler au moment du exit */
   atexit(quit);
-  /* placer draw comme fonction à appeler pour dessiner chaque frame */
-  //gl4duwPassiveMotionFunc(ecranX,ecranY) ;
   gl4duwDisplayFunc(draw);
-  /* boucle infinie pour éviter que le programme ne s'arrête et ferme
-   * la fenêtre immédiatement */
   gl4duwMainLoop();
   return 0;
 }
 
-/* initialise des paramètres GL et GL4D */
-void init(void) {
-  /* activer la synchronisation verticale */
-  SDL_GL_SetSwapInterval(1);
-  /* set la couleur d'effacement OpenGL */
-  glClearColor(0.0f, 0.0f, 0.5f, 1.0f);
+static void init(void) {
+  _quad = gl4dgGenQuadf();
+  _tore = gl4dgGenTorusf(20, 20, 0.33f);
+  _pId[0] = gl4duCreateProgram("<vs>shaders/light.vs", "<fs>shaders/light.fs", NULL);
+  _pId[1] = gl4duCreateProgram("<vs>shaders/filter.vs", "<fs>shaders/filter.fs", NULL);
+  glGenTextures(2, _texId);
+  for(int i = 0; i < 2; ++i) {
+    glBindTexture(GL_TEXTURE_2D, _texId[i]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, _wW, _wH, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+  }
+  glBindTexture(GL_TEXTURE_2D, 0);  
 
-  
-  /* générer un cube en GL4D */
-  _cube = gl4dgGenCubef();
-  /* créer un programme GPU pour OpenGL (en GL4D) */
-  _pId = gl4duCreateProgram("<vs>shaders/hello.vs", "<fs>shaders/hello.fs", NULL);
-  /* créer dans GL4D une matrice qui s'appelle modview ; matrice de
-     modélisation et vue qu'on retrouvera dans le vertex shader */
-  gl4duGenMatrix(GL_FLOAT, "modview");
-  /* créer dans GL4D une matrice qui s'appelle proj ; matrice de
-     projection qu'on retrouvera dans le vertex shader */
-  gl4duGenMatrix(GL_FLOAT, "proj");
-  /* binder (mettre au premier plan, "en courante" ou "en active") la matrice proj */
-  gl4duBindMatrix("proj");
-  /* mettre la matrice identité (celle qui ne change rien) dans la matrice courante */
+  glGenFramebuffers(1, &_fbo);
+
+  gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
+  gl4duGenMatrix(GL_FLOAT, "modelMatrix");
+  gl4duGenMatrix(GL_FLOAT, "viewMatrix");
+  resize(_wW, _wH);
+}
+
+
+void resize(int w, int h) {
+  GLfloat ratio = h / (GLfloat)w;
+  _wW = w; _wH = h;
+  gl4duBindMatrix("projectionMatrix");
   gl4duLoadIdentityf();
-  /* combiner la matrice courante avec une matrice de projection en
-     perspective. Voir le support de cours pour les six paramètres :
-     left, right, bottom, top, near, far */
-  gl4duFrustumf(-1, 1, -0.75, 0.75, 1, 1000); //En gros la camera (ou plutot ça projection su rl'ecran, elle peut deformer les objets)
-
+  gl4duFrustumf(-1.0f, 1.0f, -1.0f * ratio, 1.0f * ratio, 2.0f, 100.0f);
+  glViewport(0, 0, _wW, _wH);
 }
 
-void draw(void) {
-  /* une variable pour stocker un ange qui incrémente */
-  //static float a = 0;
-  /* set une couleur d'effacement random pour OpenGL */
-  //glClearColor(gl4dmURand(), gl4dmURand(), gl4dmURand(), 1.0);
-  /* effacer le buffer de couleur (image) et le buffer de profondeur d'OpenGL */
+
+
+/*!\brief Cette fonction dessine dans le contexte OpenGL actif. */
+static void draw(void) {
+  static GLfloat angle = 0.0f;
+  static double t0 = 0.0;
+  double t = gl4dGetElapsedTime(), dt = (t - t0) / 1000.0;
+  t0 = t;
+
+
+
+  glEnable(GL_DEPTH_TEST);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  /* utiliser le programme GPU "_pId" */
-  glUseProgram(_pId);
-  //gl4duwKeyDownFunc(handleKeyPress);
-  /* binder (mettre au premier plan, "en courante" ou "en active") la
-     matrice modview */
+  glUseProgram(_pId[0]);
 
-    
-  gl4duBindMatrix("modview");
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glUniform1i(glGetUniformLocation(_pId, "screen_texture"), 0);
-  /* mettre la matrice identité (celle qui ne change rien) dans la matrice courante */
-  gl4duLoadIdentityf(); //Cela veut dire recommence à ton état initial très important pour reset à chaque boucle
-  gl4dgDraw(_cube) ;
-  gl4duTranslatef(0,0,-5);
-  gl4duRotatef(angle,1,1,0);
+  gl4duBindMatrix("viewMatrix");
+  gl4duLoadIdentityf();
+  gl4duLookAtf(1.0f, 1.0f, 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+  gl4duBindMatrix("modelMatrix");
+  gl4duLoadIdentityf();
+  gl4duRotatef(angle, 1.0f, 0.0f, 0.0f);
   gl4duSendMatrices();
-  glUniform1f(glGetUniformLocation(_pId, "time"), (float)gl4dGetTime());
-  //glUniform4f(glGetUniformLocation(_pId, "couleur"), 1.0f, 0.0f, 0.0f, 1.0f);
-  glUseProgram(0);
-  angle += 0.7 ;
+
+  glUniform1f(glGetUniformLocation(_pId[0], "temps"), t / 1000.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "Lp"), 0.0f, 0.0f, 1.5f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "sdiffus"), 0.8f, 0.0f, 0.0f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "sambient"), 0.85f, 1.0f, 0.85f, 1.0f);
+
+  gl4dgDraw(_tore);
+
+  angle += 18.0f * dt;
+
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[0], 0);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[1], 0); /* le output */
+
+  glClear(GL_COLOR_BUFFER_BIT);
+  glUseProgram(_pId[1]);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, _texId[0]); /* le input */
+  glUniform1i(glGetUniformLocation(_pId[1], "tex"), 0); // le 0 correspond à glActiveTexture(GL_TEXTURE0);
+  glUniform1f(glGetUniformLocation(_pId[1], "time"), t);
+  gl4dgDraw(_quad);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  
+  
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-
-/* appelée lors du exit */
-void quit(void) {
-  /* nettoyer (libérer) tout objet créé avec GL4D */
+/*!\brief appelée au moment de sortir du programme (atexit), elle
+ *  libère les éléments OpenGL utilisés.*/
+static void quit(void) {
+  /* suppression de la texture */
+  if(_texId[0])
+    glDeleteTextures(2, _texId);
+  /* suppression du fbo */
+  if(_fbo)
+    glDeleteFramebuffers(1, &_fbo);
+  /* nettoyage des éléments utilisés par la bibliothèque GL4Dummies */
   gl4duClean(GL4DU_ALL);
 }
-

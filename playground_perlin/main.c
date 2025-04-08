@@ -74,7 +74,7 @@ void draw(void) {
   GLfloat lumpos[] = {0.0f, 1.5f, -10.0f, 1.0f};
   lumpos[1] = 2.0f + 1.9f * sin(a);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glUseProgram(_pId[0]);
+  glUseProgram(_pId[1]);
   glUniform4fv(glGetUniformLocation(_pId[0], "lumpos") , 1, lumpos);
 
   gl4duBindMatrix("view");
@@ -87,46 +87,14 @@ void draw(void) {
   gl4duRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
   gl4duScalef(15.0f, 10.0f, 15.0f);
   gl4duSendMatrices();
-  glUniform1f(glGetUniformLocation(_pId[0], "temps"), t);
-  glUniform4fv(glGetUniformLocation(_pId[0], "couleur") , 1, bleu);
+  glUniform1f(glGetUniformLocation(_pId[1], "zoom"), 1.0f);
+  glUniform1f(glGetUniformLocation(_pId[1], "temps"), t);
+  glUniform4fv(glGetUniformLocation(_pId[1], "couleur") , 1, bleu);
 
   gl4dgDraw(_quadId);
 
-
-  /* Attention le CULL FACE est sur les faces avant */
-  glCullFace(GL_FRONT);
-  /* sphere */
-  glUseProgram(_pId[1]);
-  gl4duLoadIdentityf();
-  gl4duScalef(14.0f, 14.0f, 14.0f);
-  gl4duRotatef(180.0f * a1 / M_PI, 0.0f, 0.0f, 1.0f);
-  gl4duSendMatrices();
-  glUniform1i(glGetUniformLocation(_pId[1], "est_ciel"), 0);
-  glUniform1f(glGetUniformLocation(_pId[1], "zoom"), 0.9f);
-  useNoiseTextures(_pId[1], 0);
-  gl4dgDraw(_sphereId);
-  //unuseNoiseTextures(0);
-
-   /* Attention le CULL FACE est sur les faces arrières */
-   glCullFace(GL_BACK);
-   /* Soleil */
-   gl4duLoadIdentityf();
-   gl4duTranslatef(0.0f, 0.4f, -14.0f);
-   gl4duScalef(2.0f, 2.0f, 2.0f);
-   gl4duRotatef(180.0f * a / M_PI, 0.0f, 1.0f, 0.0f);
-   gl4duSendMatrices();
-   glUniform1i(glGetUniformLocation(_pId[1], "est_ciel"), 1);
-   glUniform1f(glGetUniformLocation(_pId[1], "zoom"), 1.1f);
-   glUniform1f(glGetUniformLocation(_pId[1], "temps"), a);
-   useNoiseTextures(_pId[1], 0);
-   gl4dgDraw(_sphereId);
-   unuseNoiseTextures(0);
- 
-
   //gl4dfScattering(0, 0, 6, 0, 0, GL_FALSE);
-  //gl4dfMedian(0, 0, 2, GL_FALSE);
-  gl4dgDraw(_soleilId);
-  //gl4dfBlur(0, 0, 7, 1, 0, GL_FALSE);
+  //gl4dfMedian(0, 0, 2, GL_FALSE);  //gl4dfBlur(0, 0, 7, 1, 0, GL_FALSE);
 
   glUseProgram(0);
 

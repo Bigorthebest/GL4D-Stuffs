@@ -16,17 +16,17 @@ CFLAGS = -Wall -O3
 CPPFLAGS = -I.
 LDFLAGS = -lm
 # définition des fichiers et dossiers
-PACKNAME = tex
-PROGNAME = filter
-VERSION = 1.0
+PACKNAME = advanced
+PROGNAME = modelisation
+VERSION = 1.1
 distdir = $(PACKNAME)_$(PROGNAME)-$(VERSION)
-HEADERS = 
-SOURCES = window.c
+HEADERS = noise.h
+SOURCES = main.c noise.c
 MSVCSRC = $(patsubst %,<ClCompile Include=\"%\\\" \\/>,$(SOURCES))
 OBJ = $(SOURCES:.c=.o)
 DOXYFILE = documentation/Doxyfile
 VSCFILES = $(PROGNAME).vcxproj $(PROGNAME).sln
-EXTRAFILES = COPYING $(wildcard shaders/*.?s) $(VSCFILES)
+EXTRAFILES = COPYING $(wildcard shaders/*.?s images/*.png images/*.jpg) $(VSCFILES)
 DISTFILES = $(SOURCES) Makefile $(HEADERS) $(DOXYFILE) $(EXTRAFILES)
 # Traitements automatiques pour ajout de chemins et options (ne pas modifier)
 ifneq (,$(shell ls -d /usr/local/include 2>/dev/null | tail -n 1))
@@ -42,7 +42,7 @@ ifneq (,$(shell ls -d $(HOME)/local/lib 2>/dev/null | tail -n 1))
 	LDFLAGS += -L$(HOME)/local/lib
 endif
 ifeq ($(shell uname),Darwin)
-	MACOSX_DEPLOYMENT_TARGET = 10.8
+	MACOSX_DEPLOYMENT_TARGET = 11.0
         CFLAGS += -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
         LDFLAGS += -framework OpenGL -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
 else
@@ -77,7 +77,7 @@ msvc: $(VSCFILES)
 	@echo "Now these files ($?) already exist. If you wish to regenerate them, you should first delete them manually."  
 $(VSCFILES):
 	@echo "Generating $@ ..."
-	@cat $(HOME)/work/fromGIT/GL4Dummies/Windows/templates/gl4dSample$(suffix $@) | sed -e "s/INSERT_PROJECT_NAME/$(PROGNAME)/g" | sed -e "s/INSERT_TARGET_NAME/$(PROGNAME)/" | sed -e "s/INSERT_SOURCE_FILES/$(MSVCSRC)/" > $@
+	@cat ../../Windows/templates/gl4dSample$(suffix $@) | sed -e "s/INSERT_PROJECT_NAME/$(PROGNAME)/g" | sed -e "s/INSERT_TARGET_NAME/$(PROGNAME)/" | sed -e "s/INSERT_SOURCE_FILES/$(MSVCSRC)/" > $@
 clean:
 	@$(RM) -r $(PROGNAME) $(OBJ) *~ $(distdir).tgz $(distdir).zip gmon.out	\
 	  core.* documentation/*~ shaders/*~ documentation/html
