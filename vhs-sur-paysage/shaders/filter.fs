@@ -15,6 +15,7 @@ uniform float bruit;
 in vec2 vsoTexCoord;
 #define PI 3.1415926535897932384626433832795
 out vec4 fragColor;
+uniform int glitch ; 
 
 uniform int samples = 0;
 
@@ -47,6 +48,7 @@ float v2random(vec2 uv) {
 
 void main() {
 	vec2 uvn = vsoTexCoord;
+	vec2 inv_uvn = - vsoTexCoord;
 	vec3 col = vec3(0.0, 0.0, 0.0);
 
 	// Tape wave.
@@ -57,6 +59,54 @@ void main() {
 	float tc_noise = smoothstep(0.3, 1.0, v2random(vec2(uvn.y * 4.77, time)));
 	float tc = tc_phase * tc_noise;
 	uvn.x = uvn.x - tc / vhs_resolution.x * 8.0 * tape_crease_smear;//mettre tc pour le glitch classique 
+	//Glitch de l'infinie 
+	if (glitch == 4){
+		uvn = vec2(0.1 + (time) * cos(uvn.x), 0.1 - (time)* sin(uvn.y));
+	}
+	vec2 texSize = vec2(textureSize(tex, 0));
+    vec2 coord = vsoTexCoord * texSize;
+
+	//Mini ecran et ecran verticale 
+	if (glitch == 1){
+		if (coord.x >= texSize.x / 2){
+			if(coord.y >= texSize.y / 2){
+				uvn = vec2(uvn.x * 2, uvn.y * 2) ;
+			}
+			else{
+				uvn = vec2(uvn.x -tc_phase / vhs_resolution.y);
+			}
+		}
+	}
+	if (glitch == 2){
+		for(int i = 0 ;i < 10;i++){
+			if (coord.x <= texSize.x / 2){
+				if(coord.y >= texSize.y / 2){
+					uvn = vec2(uvn.x * 2, uvn.y * 2) ;
+				}
+				else{
+					uvn = vec2(uvn.x -tc_phase / vhs_resolution.y);
+				}
+			}
+			else{
+				uvn = vec2(uvn.x * 2, uvn.y * 2) ;
+			}
+		}
+	}
+	if (glitch == 3){
+		if (coord.x <= texSize.x / 1.5){
+			if(coord.y >= texSize.y / 3){
+				uvn = vec2(inv_uvn.x * 2, inv_uvn.y * 2) ;
+			}
+			else{
+				uvn = vec2(uvn.x -tc_phase / vhs_resolution.y,inv_uvn.y);
+			}
+		}
+	}
+	if (glitch == 5){
+		if (coord.x >= texSize.x / 2 && coord.y >= texSize.y / 2){
+			uvn = vec2(uvn.x * 2, uvn.y * 2) ;
+		}
+	}
 	//Glitch pour aleks :) 
 	//uvn.x = uvn.x - tc_phase / vhs_resolution.x * 8.0 * tape_crease_smear;
 	// Décalage RGB
@@ -74,7 +124,11 @@ void main() {
     		fragColor = vec4(col, 1.0);
 		}
   		else{
-    		fragColor = vec4(color_bruit,1.0);
+			//vec2 texSize = vec2(textureSize(tex, 0));
+    		//vec2 coord = vsoTexCoord * texSize;
+			//vec4 couleur_adjacent = texture(tex, (v2random(coord)) / texSize);
+    		//fragColor = vec4(couleur_adjacent);
+			fragColor = vec4(color_bruit,1.0);
 		}
 	}
 	else {

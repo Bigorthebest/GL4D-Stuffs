@@ -199,7 +199,7 @@ uniform float bottom_border_thickness: hint_range(0.0,32.0, 0.1) = 6.0;
 uniform float bottom_border_jitter: hint_range(0.0, 24.0, 0.5) = 6.0;
 
 group_uniforms noise;
-uniform float noise_intensity: hint_range(0.0, 1.0, 0.1) = 0.1;
+uniform float : hint_range(0.0, 1.0, 0.1) = 0.1;
 uniform sampler2D noise_texture: filter_linear_mipmap, repeat_enable;
 
 uniform vec2 blur_direction = vec2(1.0, 0.0); // Flou horizontal par défaut

@@ -115,7 +115,9 @@ static void draw(void) {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, _texId[0]); /* le input */
   glUniform1i(glGetUniformLocation(_pId[1], "tex"), 0); // le 0 correspond à glActiveTexture(GL_TEXTURE0);
-  glUniform1f(glGetUniformLocation(_pId[1], "time"), t);
+  glUniform1f(glGetUniformLocation(_pId[1], "time"), -(t/1000));
+  glUniform3f(glGetUniformLocation(_pId[1], "rgb_shift"),0.090, 0.010, 0.070);
+  glUniform1f(glGetUniformLocation(_pId[1], "bruit"),0.1);
   gl4dgDraw(_quad);
   glBindTexture(GL_TEXTURE_2D, 0);
   

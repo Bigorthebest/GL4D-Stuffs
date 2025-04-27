@@ -556,7 +556,7 @@ float snoise(vec4 P) {
   // Sum up and scale the result to cover the range [-1,1]
   return 27.0 * (n0 + n1 + n2 + n3 + n4);
 }
-
+///////
 float rug2(void) {
   const float zoom = 1.0;
   float no = 0.0;

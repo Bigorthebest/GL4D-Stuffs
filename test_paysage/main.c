@@ -65,30 +65,40 @@ void draw(void) {
   static const GLfloat rouge[] = {0.6f, 0.0f, 0.0f, 1.0f}, bleu[] = {0.0f, 0.0f, 0.6f, 1.0f};
   static GLfloat a = 0.0f;
   static GLfloat a1 = 0.0f;
+  
   static double t0 = 0.0;
   double t = gl4dGetElapsedTime() / 1000.0, dt = (t - t0);
   t0 = t;
 
 
   //GLfloat lumpos[] = {-4.0f, 4.0f, 0.0f, 1.0f};
-  GLfloat lumpos[] = {0.0f, 1.5f, -10.0f, 1.0f};
+  GLfloat lumpos[] = {0.0f, sin(t) * 1.5f, -10.0f, 1.0f};
   lumpos[1] = 2.0f + 1.9f * sin(a);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glUseProgram(_pId[0]);
-  glUniform4fv(glGetUniformLocation(_pId[0], "lumpos") , 1, lumpos);
+  glUniform4f(glGetUniformLocation(_pId[0], "lumpos") ,0.0f, sin(t) + 0.0f, -3.0f, 1.0f);
+  //glUniform4f(glGetUniformLocation(_pId[0], "lumpos") ,0.0f, 0.4f, -20.0f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "ldiffus"), 1.0f, 0.1f, 0.1f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "lspec"), 1.0f, 0.6f, 0.0f, 1.0f);
+  //Lumiére de la scéne 
+  glUniform4f(glGetUniformLocation(_pId[0], "lambient"), 0.0f, 0.2f, 1.0f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "sambient"),  0.0f, 1.0f, 0.80f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "sdiffus"),  0.0f, 0.6f, 0.6f, 1.0f);
+  glUniform4f(glGetUniformLocation(_pId[0], "sspeculaire"),1.0f, 0.5f, 0.5f, 1.0f);
 
   gl4duBindMatrix("view");
   gl4duLoadIdentityf();
-  gl4duLookAtf(0.0f, 2.0f, 6.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+  gl4duLookAtf(0.0f, 5.0f, 15.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+  //gl4duLookAtf(0.0f, 2.0f, 6.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
   /* quad */
   gl4duBindMatrix("model");
   gl4duLoadIdentityf();
   gl4duRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-  gl4duScalef(15.0f, 10.0f, 15.0f);
+  gl4duScalef(20.0f, 20.0f, 20.0f);
   gl4duSendMatrices();
   glUniform1f(glGetUniformLocation(_pId[0], "temps"), t);
-  glUniform4fv(glGetUniformLocation(_pId[0], "couleur") , 1, bleu);
+  //glUniform4fv(glGetUniformLocation(_pId[0], "couleur") , 1, bleu);
 
   gl4dgDraw(_quadId);
 
@@ -98,7 +108,7 @@ void draw(void) {
   /* sphere */
   glUseProgram(_pId[1]);
   gl4duLoadIdentityf();
-  gl4duScalef(14.0f, 14.0f, 14.0f);
+  gl4duScalef(20.0f, 20.0f, 20.0f);
   gl4duRotatef(180.0f * a1 / M_PI, 0.0f, 0.0f, 1.0f);
   gl4duSendMatrices();
   glUniform1i(glGetUniformLocation(_pId[1], "est_ciel"), 0);
@@ -111,7 +121,7 @@ void draw(void) {
    glCullFace(GL_BACK);
    /* Soleil */
    gl4duLoadIdentityf();
-   gl4duTranslatef(0.0f, 0.4f, -14.0f);
+   gl4duTranslatef(0.0f, 0.4f, -20.0f);
    gl4duScalef(2.0f, 2.0f, 2.0f);
    gl4duRotatef(180.0f * a / M_PI, 0.0f, 1.0f, 0.0f);
    gl4duSendMatrices();

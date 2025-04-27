@@ -23,6 +23,11 @@ static GLfloat bruit = 0.01 ;
 static GLuint _fbo = 0;
 //Id texture (pour le fbo)
 static GLuint _texId[] = { 0, 0 };
+//Pour la programation des glitchs
+int prog_glitch[] = {0,0,0,0,0,0,1,2,1,5,4,4,4,4,4,4,4,2,1,5,3,3,3,3,3} ;
+int indice_glitch = 0 ;
+int taille_prog = 26 ;
+int compt = 0 ;
 
 int main(int argc, char ** argv) {
   if(!gl4duwCreateWindow(argc, argv, "Test coucher de soleil - VHS", GL4DW_POS_CENTERED, GL4DW_POS_CENTERED,
@@ -109,6 +114,7 @@ void draw(void) {
   t0 = t;
 
 
+
   //GLfloat lumpos[] = {-4.0f, 4.0f, 0.0f, 1.0f};
   GLfloat lumpos[] = {0.0f, 1.5f, -10.0f, 1.0f};
   lumpos[1] = 2.0f + 1.9f * sin(a);
@@ -189,7 +195,8 @@ void draw(void) {
   glUniform1f(glGetUniformLocation(_pId[2], "time"), -(t));
   glUniform3f(glGetUniformLocation(_pId[2], "rgb_shift"),0.015, 0.00, 0.005);
   glUniform1f(glGetUniformLocation(_pId[2], "bruit"),bruit);
-  glUniform2f(glGetUniformLocation(_pId[2], "vhs_resolution"),_wW,_wH);
+  glUniform1i(glGetUniformLocation(_pId[2], "glitch"), prog_glitch[indice_glitch]);
+  //glUniform2f(glGetUniformLocation(_pId[2], "vhs_resolution"),_wW,_wH); //sert a rien apparement, viens du projet original
 
   gl4dgDraw(_quad_fbo);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -198,6 +205,16 @@ void draw(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  fprintf(stderr,"temps : %f, compt : %d indice : %d\n",t,compt,indice_glitch);
+  if(compt >= 30){
+    indice_glitch += 1 ;
+    if (indice_glitch == taille_prog){
+      indice_glitch = 0 ;
+    }
+    compt = 0 ;
+  }
+  compt += 1 ;
 }
 
 void sortie(void) {
