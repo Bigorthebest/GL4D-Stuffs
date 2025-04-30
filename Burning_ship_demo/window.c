@@ -116,6 +116,8 @@ void draw(void) {
 
   
   if(compt > 120){
+    
+    /*
     if(bateau == 0){
       compt = 0 ;
       coord = -1.3 ;
@@ -129,7 +131,7 @@ void draw(void) {
       mouvement[0] = 0.4 ;
       mouvement[1] = 17.400030 ;
       bateau = 0;
-    }
+    }*/
   }
   else{
     compt += 1 ;
