@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "gl4du.h": "c",
+        "sdl_image.h": "c",
+        "gl4df.h": "c"
+    }
+}

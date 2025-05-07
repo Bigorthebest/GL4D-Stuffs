@@ -27,16 +27,18 @@ static void keydown(int keycode);
  * ce tableau se termine toujours par l'élémént {0, NULL, NULL,
  * NULL} */
 static GL4DHanime _animations[] = {
-  { 6000, fractale, NULL, NULL },
-  { 3000, fractale, burning_ship, fondu },
-  { 7000, burning_ship, NULL, NULL },
+  { 5000, fractale, NULL, NULL },
+  { 2000, fractale, burning_ship, fondu },
+  { 10000, burning_ship, NULL, NULL },
+  { 1000, burning_ship, dawn, fondu},
   { 11000, dawn, NULL, NULL },
+  { 1000, dawn, credit, fondui},
   { 15000, credit, NULL, NULL},
   {    0, NULL, NULL, NULL } /* Toujours laisser à la fin */
 };
 
 /*!\brief dimensions initiales de la fenêtre */
-static GLfloat _dim[] = {1024, 768};
+static GLfloat _dim[] = {1920, 1080};
 
 /*!\brief fonction principale : initialise la fenêtre, OpenGL, audio
  * et lance la boucle principale (infinie).
@@ -53,7 +55,9 @@ int main(int argc, char ** argv) {
   gl4duwKeyDownFunc(keydown);
   gl4duwDisplayFunc(gl4dhDraw);
 
+  //ahInitAudio("nuit_d'angoisse.mid",1);
   ahInitAudio("nuit_d'angoisse.mid",1);
+
 
   gl4duwMainLoop();
   return 0;

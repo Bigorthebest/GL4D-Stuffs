@@ -20,7 +20,7 @@ PACKNAME = tex
 PROGNAME = filter
 VERSION = 1.0
 distdir = $(PACKNAME)_$(PROGNAME)-$(VERSION)
-HEADERS = 
+HEADERS = GL4D/gl4dfCommon.h
 SOURCES = window.c
 MSVCSRC = $(patsubst %,<ClCompile Include=\"%\\\" \\/>,$(SOURCES))
 OBJ = $(SOURCES:.c=.o)

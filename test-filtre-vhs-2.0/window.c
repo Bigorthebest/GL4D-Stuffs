@@ -3,6 +3,7 @@
 #include <GL4D/gl4duw_SDL2.h>
 #include <SDL_image.h>
 #include <assert.h>
+#include <GL4D/gl4df.h>
 
 /* Prototypes des fonctions statiques contenues dans ce fichier C */
 static void init(void);
@@ -34,12 +35,13 @@ int main(int argc, char ** argv) {
 }
 
 static void init(void) {
-  _quad = gl4dgGenQuadf();
   _tore = gl4dgGenTorusf(20, 20, 0.33f);
   _pId[0] = gl4duCreateProgram("<vs>shaders/light.vs", "<fs>shaders/light.fs", NULL);
   //Ancienne maniére par l'include d'un fichier shaders
   //_pId[1] = gl4duCreateProgram("<vs>shaders/filter.vs", "<fs>shaders/filter.fs", NULL);
-  
+
+  //Debut INIT VHS
+  _quad = gl4dgGenQuadf();
   //Nouvelle maniére include direct avec imfs
   if(!_pId[1]){
     const char * imfs = "<imfs>vhs-filter.fs</imfs>\n"
@@ -93,7 +95,18 @@ static void init(void) {
       "  fragColor = vec4(col, 1.0);"
       "}"
     "}" ;
-    _pId[1] = gl4duCreateProgram("<vs>shaders/filter.vs", imfs, NULL); //j'utilise toujours mon fichier vs mais je pourrais le remplacer
+    const char * imvs =
+    "<imvs>vhs-filter.vs</imvs>\n"
+    "#version 330\n"
+    "layout (location = 0) in vec2 vsiPosition;\n"
+    "layout (location = 1) in vec3 vsiNormal;\n"
+    "layout (location = 2) in vec2 vsiTexCoord;\n"
+    "out vec2 vsoTexCoord;\n"
+    "void main(void) {\n"
+    "gl_Position = vec4(vsiPosition, 0.0, 1.0);\n"
+    "vsoTexCoord = vec2(vsiTexCoord.x, vsiTexCoord.y);\n"
+    "}" ;
+    _pId[1] = gl4duCreateProgram(imvs, imfs, NULL); //j'utilise toujours mon fichier vs mais je pourrais le remplacer
     gl4duAtExit(quit);
 }
   glGenTextures(2, _texId);
@@ -108,13 +121,13 @@ static void init(void) {
   glBindTexture(GL_TEXTURE_2D, 0);  
 
   glGenFramebuffers(1, &_fbo);
+  //FIN init VHS
 
   gl4duGenMatrix(GL_FLOAT, "projectionMatrix");
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "viewMatrix");
   resize(_wW, _wH);
 }
-
 
 void resize(int w, int h) {
   GLfloat ratio = h / (GLfloat)w;
@@ -158,6 +171,8 @@ static void draw(void) {
 
   angle += 18.0f * dt;
 
+  //début DRAW VHS
+
   glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[0], 0);
 
@@ -183,6 +198,7 @@ static void draw(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  //FIN DRAW VHS
 }
 
 /*!\brief appelée au moment de sortir du programme (atexit), elle

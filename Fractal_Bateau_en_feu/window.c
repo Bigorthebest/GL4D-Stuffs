@@ -21,10 +21,11 @@ GLuint _pId = 0;
 /* on créé une variable pour stocker l'identifiant de la géométrie d'un sphere GL4D */
 GLuint _quad = 0;
 //Pour le keydown
-int zoom = 1 ;
-float coord = 0.0 ;
+float coord = -2.0 ;
 //Direction de la fractale 
-float mouvement[2] = {0,0} ;
+float mouvement[2] = {0.4,0.8} ; //0,0 pour la pose de départ 
+int compt_dt = 0 ;
+int bateau = 0 ;
 
 static int _ww = 600, _wh = 600;
 
@@ -57,7 +58,6 @@ int main(int argc, char ** argv) {
 static void keydown(int keycode) {
   switch(keycode) {
   case SDLK_z:
-    zoom = 0 ;
     coord += 0.1 ;
     break;
   case SDLK_UP :
@@ -73,7 +73,6 @@ static void keydown(int keycode) {
     mouvement[1] -= 0.1 ;
     break ;
   case SDLK_s :
-    zoom = 2 ;
     coord -= 0.1 ;
     break ;
   case SDLK_ESCAPE:
@@ -109,10 +108,29 @@ void draw(void) {
   glUniform1f(glGetUniformLocation(_pId,"angle"),angle) ; //"resolution"
   glUniform2f(glGetUniformLocation(_pId,"resolution"),_ww,_wh) ;
   glUniform1f(glGetUniformLocation(_pId,"temps"),t) ; //"resolution"
-  glUniform1i(glGetUniformLocation(_pId,"zoom"),zoom) ; //"resolution"
   glUniform1f(glGetUniformLocation(_pId,"coord"),coord) ;
   glUniform2f(glGetUniformLocation(_pId,"move"),mouvement[0],mouvement[1]) ; //"direction"
 
+  /*
+  if(compt_dt > 120){
+    if(bateau == 0){
+      compt_dt = 0 ;
+      coord = -1.3 ;
+      mouvement[0] = 0.4 ; 
+      mouvement[1] = 0.8 ;
+      bateau = 1 ;
+    }
+    else{
+      compt_dt = 0 ;
+      coord = -0.1 ;
+      mouvement[0] = 0.4 ;
+      mouvement[1] = 17.400030 ;
+      bateau = 0;
+    }
+  }
+  else{
+    compt_dt += 1 ;
+  }*/
 
   
   gl4dgDraw(_quad);

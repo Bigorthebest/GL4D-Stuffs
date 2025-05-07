@@ -10,8 +10,9 @@ static void init(void);
 /* TODO : gérer le retaillage de la fenêtre */
 /* static void resize(int width, int height); */
 static void draw(void);
+static void filtreVHS(GLint originFBO,double t);
 
-static GLuint _wW = 1024, _wH = 768;
+static GLuint _wW = 1920, _wH = 1080;//1920, 1080
 static GLuint _soleilId = 0;
 static GLuint _quadId = 0;
 static GLuint _quad_fbo = 0 ;
@@ -20,6 +21,7 @@ static GLuint _pIdDawn[3] = { 0 };
 static GLfloat bruit = 0.02 ;
 //id FBO 
 static GLuint _fbo = 0;
+static GLint originalFBO = 0;
 //Id texture (pour le fbo)
 static GLuint _texId[] = { 0, 0 };
 //Pour la programation des glitchs
@@ -56,6 +58,8 @@ void dawn(int state) {
 }
 
 void init(void) {
+  //récup le fbo de base 
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &originalFBO);
   initNoiseTextures();
   glClearColor(0.75f, 0.75f, 0.75f, 1.0f);
   SDL_GL_SetSwapInterval(1);
@@ -69,7 +73,17 @@ void init(void) {
   _pIdDawn[0] = gl4duCreateProgram("<vs>shaders/dawn.vs", "<fs>shaders/dawn.fs", NULL);
   _pIdDawn[1] = gl4duCreateProgram("<vs>shaders/dawn.vs", "<fs>shaders/perlin.fs", NULL);
   _pIdDawn[2] = gl4duCreateProgram("<vs>shaders/filter.vs", "<fs>shaders/filter.fs", NULL);
-  //gestion des textures pour le FBO 
+  //glGenTextures(1, &_texId[0]);
+  /*
+  glBindTexture(GL_TEXTURE_2D, _texId[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glBindTexture(GL_TEXTURE_2D, 0);
+*/
+  //fbo de post process
+  glGenFramebuffers(1, &_fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
   glGenTextures(2, _texId);
   for(int i = 0; i < 2; ++i) {
     glBindTexture(GL_TEXTURE_2D, _texId[i]);
@@ -78,10 +92,10 @@ void init(void) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, _wW, _wH, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[i], 0);
   }
-  glBindTexture(GL_TEXTURE_2D, 0);  
-
-  glGenFramebuffers(1, &_fbo);
+  //glBindTexture(GL_TEXTURE_2D, 0); 
+  //glBindFramebuffer(GL_FRAMEBUFFER, originalFBO);
 
   gl4duGenMatrix(GL_FLOAT, "model");
   gl4duGenMatrix(GL_FLOAT, "view");
@@ -107,11 +121,33 @@ void draw(void) {
   //static double t0 = 0.0;
   double t = gl4dGetElapsedTime() / 1000.0;// dt = (t - t0);
   //t0 = t;
+  //Sauvegarder le framebuffer original
+  GLint originFBO;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &originFBO);
+/*
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+  glBindTexture(GL_TEXTURE_2D, _texId[0]);
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _texId[0], 0);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glUseProgram(_pIdDawn[2]);
+  glUniform1i(glGetUniformLocation(_pIdDawn[2], "tex"), 0); // le 0 correspond à glActiveTexture(GL_TEXTURE0);
+  glUniform1f(glGetUniformLocation(_pIdDawn[2], "time"), -(t));
+  glUniform3f(glGetUniformLocation(_pIdDawn[2], "rgb_shift"),0.015, 0.00, 0.005);
+  glUniform1f(glGetUniformLocation(_pIdDawn[2], "bruit"),bruit);
+  glUniform1i(glGetUniformLocation(_pIdDawn[2], "glitch"), prog_glitch[indice_glitch]);
+  gl4dgDraw(_quadId);
+  glBindFramebuffer(GL_FRAMEBUFFER,originalFBO );
+*/
+/*
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[0], 0);
   //GLfloat lumpos[] = {-4.0f, 4.0f, 0.0f, 1.0f};
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glClearColor(0.5,0.9,0.1,1.0) ;
+  glClearColor(0.5,0.9,0.1,1.0) ;*/
+  glEnable(GL_DEPTH_TEST);
+  //glBindFramebuffer(GL_FRAMEBUFFER, originFBO); // Apparement pas besoin de cette ligne
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
   glUseProgram(_pIdDawn[0]);
   glUniform4f(glGetUniformLocation(_pIdDawn[0], "lumpos") ,0.0f, 0.0f, -3.0f, 1.0f);
@@ -196,37 +232,9 @@ void draw(void) {
   a += 0.02f * M_PI * get_dt();
   a1 += 1.0f * M_PI *  get_dt();
 
-  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[0], 0);
-
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-
-  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[1], 0); /* le output */
-
-  glClear(GL_COLOR_BUFFER_BIT);
-  glUseProgram(_pIdDawn[2]);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, _texId[0]); /* le input */
-  glUniform1i(glGetUniformLocation(_pIdDawn[2], "tex"), 0); // le 0 correspond à glActiveTexture(GL_TEXTURE0);
-  glUniform1f(glGetUniformLocation(_pIdDawn[2], "time"), -(t));
-  glUniform3f(glGetUniformLocation(_pIdDawn[2], "rgb_shift"),0.015, 0.00, 0.005);
-  glUniform1f(glGetUniformLocation(_pIdDawn[2], "bruit"),bruit);
-  glUniform1i(glGetUniformLocation(_pIdDawn[2], "glitch"), prog_glitch[indice_glitch]);
-  //glUniform2f(glGetUniformLocation(_pIdDawn[2], "vhs_resolution"),_wW,_wH); //sert a rien apparement, viens du projet original
-
-  gl4dgDraw(_quad_fbo);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  filtreVHS(originFBO, t);
   
-  
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-  //fprintf(stderr,"temps : %f, compt : %d indice : %d\n",t,compt,indice_glitch);
-  
+  //Gestion des glitch du filtre
   if(t > 17){//On commence la prog après un petit temps 
     if(compt >= 30){
       indice_glitch += 1 ;
@@ -239,3 +247,37 @@ void draw(void) {
     compt += 1 ;
   }
 }
+
+static void filtreVHS(GLint originFBO,double t){
+  /*Ici on récupére notre buffer de dessin (avec originFBO) qu'on lie et envoie dans _texId[0] qui sera notre input pour le filtre
+  Ensuite on reprend la main avec notre fbo custom auquel on bind la seconde texture (de sortie) sur laquelle on applique le filtre
+  la premiére ligne est correct cars on comunique avec notre fbo custom*/
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[0], 0);
+  
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, originFBO);
+  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  
+  glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texId[1], 0); //Notre texture output
+  
+  glClear(GL_COLOR_BUFFER_BIT);
+  glUseProgram(_pIdDawn[2]);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, _texId[0]); //on mets la texture de l'input ici
+  glUniform1i(glGetUniformLocation(_pIdDawn[2], "tex"), 0); // le 0 correspond à glActiveTexture(GL_TEXTURE0);
+  glUniform1f(glGetUniformLocation(_pIdDawn[2], "time"), -(t));
+  glUniform3f(glGetUniformLocation(_pIdDawn[2], "rgb_shift"),0.015, 0.00, 0.005);
+  glUniform1f(glGetUniformLocation(_pIdDawn[2], "bruit"),bruit);
+  glUniform1i(glGetUniformLocation(_pIdDawn[2], "glitch"), prog_glitch[indice_glitch]);
+  gl4dgDraw(_quadId);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  
+  glBindFramebuffer(GL_FRAMEBUFFER, originFBO); //On remet notre buffer de dessin classique
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo); //On lit dans notre fbo (mais on ne le bind pas vraiment)
+  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_NEAREST); //Concretement c'est afficher l'output
+  
+  //Restaurer le framebuffer original
+  glBindFramebuffer(GL_FRAMEBUFFER, originFBO); //c'est étrange mais important de tout de même le re-bind ici
+}
+
